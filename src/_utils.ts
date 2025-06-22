@@ -304,6 +304,64 @@ export function formatCurrency(amount: number): string {
 }
 
 /**
+ * Formats a date/time according to the specified time format preference
+ * @param date - The date to format
+ * @param use24Hour - Whether to use 24-hour format (default: false for 12-hour AM/PM)
+ * @param options - Additional formatting options
+ * @returns Formatted date/time string
+ */
+export function formatDateTime(date: Date, use24Hour = false, options: {
+	includeDate?: boolean;
+	includeSeconds?: boolean;
+	compact?: boolean;
+} = {}): string {
+	const { includeDate = true, includeSeconds = false, compact = false } = options;
+	
+	const baseOptions: Intl.DateTimeFormatOptions = {
+		hour: '2-digit',
+		minute: '2-digit',
+		hour12: !use24Hour,
+	};
+	
+	if (includeSeconds) {
+		baseOptions.second = '2-digit';
+	}
+	
+	if (includeDate) {
+		if (compact) {
+			baseOptions.month = '2-digit';
+			baseOptions.day = '2-digit';
+		} else {
+			// Use default full date format
+			return date.toLocaleString(undefined, { ...baseOptions });
+		}
+	}
+	
+	return date.toLocaleString(undefined, baseOptions);
+}
+
+/**
+ * Formats only the time portion of a date according to the specified time format preference
+ * @param date - The date to format
+ * @param use24Hour - Whether to use 24-hour format (default: false for 12-hour AM/PM)
+ * @param includeSeconds - Whether to include seconds (default: false)
+ * @returns Formatted time string
+ */
+export function formatTime(date: Date, use24Hour = false, includeSeconds = false): string {
+	const options: Intl.DateTimeFormatOptions = {
+		hour: '2-digit',
+		minute: '2-digit',
+		hour12: !use24Hour,
+	};
+	
+	if (includeSeconds) {
+		options.second = '2-digit';
+	}
+	
+	return date.toLocaleTimeString(undefined, options);
+}
+
+/**
  * Formats Claude model names into a shorter, more readable format
  * Extracts model type and generation from full model name
  * @param modelName - Full model name (e.g., "claude-sonnet-4-20250514")
@@ -801,6 +859,78 @@ if (import.meta.vitest != null) {
 		it('handles models that do not match pattern with bullet points', () => {
 			const models = ['custom-model', 'claude-sonnet-4-20250514'];
 			expect(formatModelsDisplayMultiline(models)).toBe('- custom-model\n- sonnet-4');
+		});
+	});
+
+	describe('formatDateTime', () => {
+		it('formats date/time in 12-hour format by default', () => {
+			const date = new Date('2024-01-15T14:30:45Z');
+			const result = formatDateTime(date, false);
+			// Should include AM/PM (exact format depends on locale, but should not contain 14:)
+			expect(result).not.toContain('14:');
+			expect(result).toMatch(/PM|AM/);
+		});
+
+		it('formats date/time in 24-hour format when use24Hour is true', () => {
+			const date = new Date('2024-01-15T14:30:45Z');
+			const result = formatDateTime(date, true);
+			// Should contain 24-hour format and not have AM/PM
+			expect(result).toContain('14:');
+			expect(result).not.toMatch(/PM|AM/);
+		});
+
+		it('includes seconds when requested', () => {
+			const date = new Date('2024-01-15T14:30:45Z');
+			const result = formatDateTime(date, true, { includeSeconds: true });
+			expect(result).toContain(':45');
+		});
+
+		it('excludes seconds by default', () => {
+			const date = new Date('2024-01-15T14:30:45Z');
+			const result = formatDateTime(date, true, { includeSeconds: false });
+			expect(result).not.toContain(':45');
+		});
+
+		it('includes date by default', () => {
+			const date = new Date('2024-01-15T14:30:45Z');
+			const result = formatDateTime(date, true);
+			// Should contain some date information (format may vary by locale)
+			expect(result.length).toBeGreaterThan(8); // More than just time
+		});
+
+		it('excludes date when includeDate is false', () => {
+			const date = new Date('2024-01-15T14:30:45Z');
+			const result = formatDateTime(date, true, { includeDate: false });
+			// Should only contain time
+			expect(result).toMatch(/^\d{1,2}:\d{2}$/);
+		});
+	});
+
+	describe('formatTime', () => {
+		it('formats time in 12-hour format by default', () => {
+			const date = new Date('2024-01-15T14:30:45Z');
+			const result = formatTime(date, false);
+			expect(result).not.toContain('14:');
+			expect(result).toMatch(/PM|AM/);
+		});
+
+		it('formats time in 24-hour format when use24Hour is true', () => {
+			const date = new Date('2024-01-15T14:30:45Z');
+			const result = formatTime(date, true);
+			expect(result).toContain('14:');
+			expect(result).not.toMatch(/PM|AM/);
+		});
+
+		it('includes seconds when requested', () => {
+			const date = new Date('2024-01-15T14:30:45Z');
+			const result = formatTime(date, true, true);
+			expect(result).toContain(':45');
+		});
+
+		it('excludes seconds by default', () => {
+			const date = new Date('2024-01-15T14:30:45Z');
+			const result = formatTime(date, true, false);
+			expect(result).not.toContain(':45');
 		});
 	});
 }

@@ -23,7 +23,7 @@ import stringWidth from 'string-width';
 import { LiveMonitor } from '../_live-monitor.ts';
 import { calculateBurnRate, projectBlockUsage } from '../_session-blocks.ts';
 import { centerText, createProgressBar, TerminalManager } from '../_terminal-utils.ts';
-import { formatCurrency, formatModelsDisplay, formatNumber } from '../_utils.ts';
+import { formatCurrency, formatModelsDisplay, formatNumber, formatTime } from '../_utils.ts';
 import { logger } from '../logger.ts';
 
 /**
@@ -36,6 +36,7 @@ export type LiveMonitoringConfig = {
 	sessionDurationHours: number;
 	mode: CostMode;
 	order: SortOrder;
+	use24Hour: boolean;
 };
 
 /**
@@ -193,9 +194,9 @@ function renderLiveDisplay(terminal: TerminalManager, block: SessionBlock, confi
 		},
 	);
 
-	// Format times with AM/PM
-	const startTime = block.startTime.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-	const endTime = block.endTime.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+	// Format times
+	const startTime = formatTime(block.startTime, config.use24Hour, true);
+	const endTime = formatTime(block.endTime, config.use24Hour, true);
 
 	// Draw header
 	terminal.write(`${marginStr}┌${'─'.repeat(boxWidth - 2)}┐\n`);
